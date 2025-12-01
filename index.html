@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Генератор Подарков AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
         theme: {
@@ -29,7 +30,7 @@
               yandex: '#FC3F1D'
             },
             fontFamily: {
-              sans: ['Inter', 'system-ui', 'sans-serif'],
+              sans: ['Inter', 'sans-serif'],
             },
             animation: {
               'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
@@ -71,68 +72,65 @@
       body {
         background-color: #050507;
         color: white;
-        font-family: 'Inter', system-ui, sans-serif;
+        font-family: 'Inter', sans-serif;
         -webkit-tap-highlight-color: transparent;
-        overflow: hidden;
+        overflow: hidden; /* Prevent body scroll, handle in app */
       }
-
+      /* Safe area support */
       .pb-safe {
         padding-bottom: env(safe-area-inset-bottom, 20px);
       }
-
       .pt-safe {
         padding-top: env(safe-area-inset-top, 20px);
       }
-
+      
+      /* Custom scrollbar for webkit */
       ::-webkit-scrollbar {
         width: 4px;
       }
-
       ::-webkit-scrollbar-track {
-        background: transparent;
+        background: transparent; 
       }
-
       ::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.1); 
         border-radius: 10px;
       }
-
       ::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.3);
+        background: rgba(255, 255, 255, 0.3); 
       }
-
+      
       .glass-panel {
         background: rgba(20, 20, 25, 0.6);
         backdrop-filter: blur(16px);
         -webkit-backdrop-filter: blur(16px);
         border: 1px solid rgba(255, 255, 255, 0.08);
       }
-
+      
       .glass-input {
         background: rgba(30, 30, 35, 0.5);
         backdrop-filter: blur(12px);
         border: 1px solid rgba(255, 255, 255, 0.05);
       }
-
+      
       .gradient-text {
         background: linear-gradient(135deg, #FFF 0%, #A5A6F6 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-
-      .animation-delay-2000 {
-        animation-delay: 2s;
-      }
-
-      .animation-delay-4000 {
-        animation-delay: 4s;
       }
     </style>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='75' font-size='75'>🎁</text></svg>">
-  </head>
+  <script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.555.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0"
+  }
+}
+</script>
+</head>
   <body>
     <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
   </body>
 </html>
