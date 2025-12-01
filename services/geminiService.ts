@@ -1,81 +1,127 @@
-import { GoogleGenAI, Type, Schema } from "@google/genai";
-import { GiftResponse } from "../types";
+import { Transaction, AIInsight } from "../types.ts";
 
-const apiKey = process.env.API_KEY || '';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "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";
+const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions";
 
-// Initialize the client
-const ai = new GoogleGenAI({ apiKey });
+interface OpenRouterMessage {
+  role: "user" | "system" | "assistant";
+  content: string;
+}
 
-const giftSchema: Schema = {
-  type: Type.OBJECT,
-  properties: {
-    giftIdeas: {
-      type: Type.ARRAY,
-      items: {
-        type: Type.OBJECT,
-        properties: {
-          title: {
-            type: Type.STRING,
-            description: "Название подарка"
-          },
-          description: {
-            type: Type.STRING,
-            description: "Краткое, цепляющее описание подарка"
-          },
-          estimatedPrice: {
-            type: Type.STRING,
-            description: "Примерная цена или диапазон цен (например, '1500 ₽' или '2000-3000 рублей')"
-          },
-          reasoning: {
-            type: Type.STRING,
-            description: "Почему это хороший подарок для описанного человека"
-          },
-          searchQuery: {
-            type: Type.STRING,
-            description: "Строка поискового запроса для поиска этого товара на маркетплейсах"
-          }
-        },
-        required: ["title", "description", "estimatedPrice", "reasoning", "searchQuery"]
-      }
+const callOpenRouter = async (messages: OpenRouterMessage[]): Promise<string> => {
+  try {
+    const response = await fetch(OPENROUTER_BASE_URL, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://coinkeep.app",
+        "X-Title": "CoinKeep"
+      },
+      body: JSON.stringify({
+        model: "grok-4.1-fast",
+        messages: messages,
+        temperature: 0.7,
+        max_tokens: 2000
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`OpenRouter API error: ${response.status} - ${JSON.stringify(errorData)}`);
     }
+
+    const data = await response.json();
+    return data.choices[0].message.content;
+  } catch (error) {
+    console.error("OpenRouter API call error:", error);
+    throw error;
   }
 };
 
-export const generateGiftIdeas = async (description: string, budget: string): Promise<GiftResponse> => {
-  if (!apiKey) {
-    throw new Error("API Key is missing");
+export const analyzeFinances = async (transactions: Transaction[], totalBalance: number): Promise<AIInsight[]> => {
+  // If no data, return welcome message without calling API
+  if (transactions.length === 0) {
+    return [
+      {
+        title: "Добро пожаловать в CoinKeep!",
+        description: "Начните добавлять свои доходы и расходы, чтобы получить персональные советы от ИИ.",
+        type: "info"
+      },
+      {
+        title: "Совет",
+        description: "Вы можете добавить регулярные платежи во вкладке 'Подписки', чтобы отслеживать ежемесячные списания.",
+        type: "success"
+      }
+    ];
   }
 
-  const prompt = `
-    Мне нужны идеи подарков для человека с таким описанием: "${description}".
-    Бюджет: "${budget}".
-    
-    Предложи 5 уникальных, креативных и строго подходящих идей подарков. 
-    Убедись, что они вписываются в бюджет или находятся рядом с ним.
-    Ответ должен быть на русском языке.
-    Для поля estimatedPrice используй валюту, которую указал пользователь (или рубли, если не указано).
-    Верни ответ в формате JSON, соответствующем схеме.
-  `;
-
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: giftSchema,
-        systemInstruction: "Ты — эксперт по подбору подарков. Твой тон — полезный, креативный и точный. Ты специализируешься на поиске продуманных подарков в рамках бюджета. Отвечай всегда на русском языке."
-      }
-    });
+    const systemPrompt = `Ты опытный финансовый советник. Отвечай на русском языке. Будь краток, профессионален и позитивен.
+    
+Ты должен ответить JSON массивом ровно в таком формате (без markdown, только валидный JSON):
+[
+  {
+    "title": "Заголовок совета",
+    "description": "Подробное описание",
+    "type": "warning|success|info"
+  }
+]
 
-    const text = response.text;
-    if (!text) {
-      throw new Error("No response from AI");
+Верни ровно 3 совета.`;
+
+    const userPrompt = `Проанализируй следующие финансовые данные и предоставь 3 конкретных, полезных совета или наблюдения на Русском языке.
+Сфокусируйся на привычках трат, возможностях для экономии или аномалиях.
+
+Текущий баланс: ${totalBalance} руб.
+Последние транзакции: ${JSON.stringify(transactions.slice(0, 15))}
+
+Верни только JSON массив, без пояснений.`;
+
+    const messages: OpenRouterMessage[] = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
+    ];
+
+    const response = await callOpenRouter(messages);
+    
+    // Parse JSON from response (Grok может обернуть в markdown блоки)
+    let jsonString = response.trim();
+    if (jsonString.startsWith("```json")) {
+      jsonString = jsonString.replace(/^```json\n/, "").replace(/\n```$/, "");
+    } else if (jsonString.startsWith("```")) {
+      jsonString = jsonString.replace(/^```\n/, "").replace(/\n```$/, "");
     }
-
-    return JSON.parse(text) as GiftResponse;
+    
+    const insights = JSON.parse(jsonString) as AIInsight[];
+    return insights;
   } catch (error) {
-    console.error("Error generating gifts:", error);
-    throw error;
+    console.error("Error analyzing finances:", error);
+    return [
+      {
+        title: "Анализ недоступен",
+        description: "Не удалось сгенерировать советы. Пожалуйста, проверьте API ключ OpenRouter.",
+        type: "info"
+      }
+    ];
+  }
+};
+
+export const chatWithAdvisor = async (message: string, contextData: string): Promise<string> => {
+  try {
+    const systemPrompt = "Ты полезный финансовый ассистент в приложении CoinKeep. Отвечай на вопросы кратко, опираясь на предоставленный контекст. Отвечай всегда на русском языке.";
+    
+    const userPrompt = `Контекст данных пользователя: ${contextData}\n\nВопрос пользователя: ${message}`;
+    
+    const messages: OpenRouterMessage[] = [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
+    ];
+
+    const response = await callOpenRouter(messages);
+    return response || "Извините, я не смог обработать этот запрос.";
+  } catch (error) {
+    console.error("Chat error:", error);
+    return "Ошибка связи с финансовым советником.";
   }
 };
