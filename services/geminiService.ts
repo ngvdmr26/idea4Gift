@@ -1,11 +1,6 @@
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { GiftResponse } from "../types";
 
-const apiKey = process.env.API_KEY || '';
-
-// Initialize the client
-const ai = new GoogleGenAI({ apiKey });
-
 const giftSchema: Schema = {
   type: Type.OBJECT,
   properties: {
@@ -32,7 +27,7 @@ const giftSchema: Schema = {
           },
           searchQuery: {
             type: Type.STRING,
-            description: "Строка поискового запроса для поиска этого товара на маркетплейсах"
+            description: "Точный поисковый запрос для маркетплейса. Если подарок дорогой (ювелирка, техника), добавь бренды или материалы (например 'золотые серьги 585', 'наушники Sony'), чтобы отсеять дешевые аналоги."
           }
         },
         required: ["title", "description", "estimatedPrice", "reasoning", "searchQuery"]
@@ -42,9 +37,13 @@ const giftSchema: Schema = {
 };
 
 export const generateGiftIdeas = async (description: string, budget: string): Promise<GiftResponse> => {
+  // Initialize lazily to avoid top-level crashes if environment isn't ready immediately
+  const apiKey = process.env.API_KEY;
   if (!apiKey) {
-    throw new Error("API Key is missing");
+    throw new Error("API Key is missing. Please check your configuration.");
   }
+
+  const ai = new GoogleGenAI({ apiKey });
 
   const prompt = `
     Мне нужны идеи подарков для человека с таким описанием: "${description}".
@@ -52,6 +51,10 @@ export const generateGiftIdeas = async (description: string, budget: string): Pr
     
     Предложи 5 уникальных, креативных и строго подходящих идей подарков. 
     Убедись, что они вписываются в бюджет или находятся рядом с ним.
+    
+    ВАЖНО: Для каждого подарка сформируй 'searchQuery', который позволит найти качественный товар, а не дешевую подделку.
+    Если бюджет высокий, добавляй слова "premium", "оригинал" или конкретные бренды в поисковый запрос.
+    
     Ответ должен быть на русском языке.
     Для поля estimatedPrice используй валюту, которую указал пользователь (или рубли, если не указано).
     Верни ответ в формате JSON, соответствующем схеме.
@@ -64,7 +67,7 @@ export const generateGiftIdeas = async (description: string, budget: string): Pr
       config: {
         responseMimeType: "application/json",
         responseSchema: giftSchema,
-        systemInstruction: "Ты — эксперт по подбору подарков. Твой тон — полезный, креативный и точный. Ты специализируешься на поиске продуманных подарков в рамках бюджета. Отвечай всегда на русском языке."
+        systemInstruction: "Ты — эксперт по подбору подарков. Твой тон — полезный, креативный и точный. Ты специализируешься на поиске продуманных подарков в рамках бюджета. Ты умеешь формулировать точные поисковые запросы для e-commerce, чтобы находить именно то, что нужно."
       }
     });
 
