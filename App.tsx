@@ -33,23 +33,23 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="relative w-full h-[100dvh] bg-dark-950 text-white overflow-hidden font-sans">
+    <div className="app-container">
       
       {/* Dynamic Animated Background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[300px] h-[300px] bg-primary/30 rounded-full blur-[100px] animate-blob mix-blend-screen" />
-        <div className="absolute top-[20%] right-[-20%] w-[250px] h-[250px] bg-accent-pink/20 rounded-full blur-[100px] animate-blob animation-delay-2000 mix-blend-screen" />
-        <div className="absolute bottom-[-10%] left-[20%] w-[350px] h-[350px] bg-accent-cyan/20 rounded-full blur-[100px] animate-blob animation-delay-4000 mix-blend-screen" />
+      <div className="app-bg-blobs">
+        <div className="blob blob-1" />
+        <div className="blob blob-2" />
+        <div className="blob blob-3" />
       </div>
 
-      {/* Grid Pattern Overlay */}
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 pointer-events-none"></div>
+      {/* Noise Pattern Overlay */}
+      <div className="noise-overlay"></div>
 
       {/* Main Content */}
-      <div className="relative z-10 h-full w-full max-w-md mx-auto flex flex-col">
+      <div className="content-wrapper">
         
         {view === AppView.INPUT && (
-          <div className="h-full animate-scale-in">
+          <div style={{height: '100%'}} className="animate-scale-in">
             <InputForm 
               input={input} 
               setInput={setInput} 
@@ -59,13 +59,13 @@ const App: React.FC = () => {
         )}
 
         {view === AppView.LOADING && (
-          <div className="h-full animate-scale-in">
+          <div style={{height: '100%'}} className="animate-scale-in">
             <LoadingScreen />
           </div>
         )}
 
         {view === AppView.RESULTS && (
-          <div className="h-full animate-scale-in">
+          <div style={{height: '100%'}} className="animate-scale-in">
             <ResultsView 
               giftIdeas={giftIdeas} 
               onBack={resetApp} 
@@ -74,20 +74,21 @@ const App: React.FC = () => {
         )}
 
         {view === AppView.ERROR && (
-          <div className="flex flex-col items-center justify-center h-full p-8 text-center space-y-6 animate-scale-in glass-panel m-4 rounded-3xl border-red-500/20">
-            <div className="bg-red-500/10 p-6 rounded-full text-red-500 ring-1 ring-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]">
+          <div className="error-view animate-scale-in glass-panel" style={{margin: '1rem', borderRadius: '1.5rem'}}>
+            <div className="error-icon-box">
                <AlertCircle size={48} />
             </div>
             <div>
-              <h3 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-red-400 to-orange-400">Ошибка</h3>
-              <p className="text-gray-400 mt-2">{error}</p>
+              <h3 style={{fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '0.5rem'}}>Ошибка</h3>
+              <p style={{color: '#9CA3AF'}}>{error}</p>
             </div>
             <button 
               onClick={resetApp}
-              className="mt-4 px-8 py-3 bg-dark-800 border border-dark-700 rounded-2xl hover:bg-dark-700 transition-all flex items-center gap-2 group"
+              className="submit-btn"
+              style={{marginTop: '1.5rem', width: 'auto', padding: '0.75rem 2rem', background: '#1C1C21'}}
             >
-              <Sparkles size={18} className="text-primary group-hover:rotate-12 transition-transform"/>
-              <span>Попробовать снова</span>
+              <Sparkles size={18} style={{color: 'var(--color-primary)'}}/>
+              <span style={{fontSize: '1rem', fontWeight: '500', color: 'white'}}>Попробовать снова</span>
             </button>
           </div>
         )}
