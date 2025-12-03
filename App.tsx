@@ -3,7 +3,7 @@ import { InputForm } from './components/InputForm';
 import { LoadingScreen } from './components/LoadingScreen';
 import { ResultsView } from './components/ResultsView';
 import { AppView, GiftIdea, UserInput } from './types';
-import { generateGiftIdeas } from './services/geminiService';
+import { generateGiftIdeas } from "./services/grokService";
 import { AlertCircle, Sparkles } from 'lucide-react';
 
 const App: React.FC = () => {
